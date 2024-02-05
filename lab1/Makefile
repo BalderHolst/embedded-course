@@ -1,7 +1,6 @@
-main: compile
+application=app
 
-compile:
-
+main:
 	mkdir -p build
 
 	arm-none-eabi-gcc \
@@ -33,10 +32,13 @@ compile:
 		build/startup_gcc.d startup_gcc.c \
 		-o build/startup_gcc.o
 
-	arm-none-eabi-ld build/main.o build/startup_gcc.o -T tm4c123.ld --entry ResetISR --gc-sections -o build/demoApp.axf -Map=build/demoApp.map
-	arm-none-eabi-objcopy -O binary build/demoApp.axf build/demoApp.bin
-	arm-none-eabi-objdump -Sd -W build/demoApp.axf > build/demoApp.lss
-	arm-none-eabi-size build/demoApp.axf
+	arm-none-eabi-ld build/main.o build/startup_gcc.o -T tm4c123.ld --entry ResetISR --gc-sections -o build/main.axf -Map=build/main.map
+	arm-none-eabi-objcopy -O binary build/main.axf build/main.bin
+	arm-none-eabi-objdump -Sd -W build/main.axf > build/main.lss
+	arm-none-eabi-size build/main.axf
 
-flash: compile
-	sudo lm4flash build/demoApp.bin
+flash: main
+	sudo lm4flash build/main.bin
+
+clean:
+	rm -rf build
