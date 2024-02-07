@@ -1,44 +1,44 @@
-application=app
+.PHONY: all flash clean
 
-main:
-	mkdir -p build
+CC := arm-none-eabi-gcc
+LD := arm-none-eabi-ld
+OC := arm-none-eabi-objcopy
+OD := arm-none-eabi-objdump
+SZ := arm-none-eabi-size
 
-	arm-none-eabi-gcc \
-		-mthumb \
-		-mcpu=cortex-m4 \
-		-mfpu=fpv4-sp-d16 \
-		-mfloat-abi=softfp \
-		-ffunction-sections \
-		-fdata-sections \
-		-std=c99 -Wall -pedantic \
-		-c -Os -O0 -g \
-		-DPART_TM4C123GH6PM -DTARGET_IS_BLIZZARD_RA1 -Dgcc \
-		-o build/main.o \
-		-MD -MF \
-		build/main.d main.c
+CFLAGS := -mthumb \
+	-mcpu=cortex-m4 \
+	-mfpu=fpv4-sp-d16 \
+	-mfloat-abi=softfp \
+	-ffunction-sections \
+	-fdata-sections \
+	-std=c99 -Wall -pedantic \
+	-Os -O0 -g \
+	-DPART_TM4C123GH6PM -DTARGET_IS_BLIZZARD_RA1 -Dgcc
 
-	arm-none-eabi-gcc \
-		-mthumb \
-		-mcpu=cortex-m4 \
-		-mfpu=fpv4-sp-d16 \
-		-mfloat-abi=softfp \
-		-ffunction-sections \
-		-fdata-sections \
-		-std=c99 -Wall -pedantic -c \
-		-Os -O0 \
-		-Dgcc -DPART_TM4C123GH6PM -DTARGET_IS_BLIZZARD_RA1 \
-		-g \
-		-MD -MF \
-		build/startup_gcc.d startup_gcc.c \
-		-o build/startup_gcc.o
+LDFLAGS := -T tm4c123.ld --entry ResetISR --gc-sections
+OBJCOPYFLAGS := -O binary
 
-	arm-none-eabi-ld build/main.o build/startup_gcc.o -T tm4c123.ld --entry ResetISR --gc-sections -o build/main.axf -Map=build/main.map
-	arm-none-eabi-objcopy -O binary build/main.axf build/main.bin
-	arm-none-eabi-objdump -Sd -W build/main.axf > build/main.lss
-	arm-none-eabi-size build/main.axf
+SOURCES := $(wildcard *.c)
+OBJECTS := $(patsubst %.c, build/%.o, $(SOURCES))
+DEPENDS := $(patsubst %.c, build/%.d, $(SOURCES))
 
-flash: main
+all: main
+
+flash: all
 	lm4flash build/main.bin
 
 clean:
 	rm -rf build
+
+-include $(DEPENDS)
+
+build/%.o: %.c Makefile
+	mkdir -p build
+	$(CC) $(CFLAGS) -MD -MF build/$*.d -c $< -o $@
+
+main: $(OBJECTS)
+	$(LD) $^ $(LDFLAGS) -o build/main.axf
+	$(OC) $(OBJCOPYFLAGS) build/main.axf build/main.bin
+	$(OD) -Sd -W build/main.axf > build/main.lss
+	$(SZ) build/main.axf
