@@ -31,7 +31,7 @@ int main(void) {
   // Enable internal pull-up (PF4).
   GPIO_PORTF_PUR_R = 0x10;
 
-  bool increment = true;
+  bool increment = false;
   bool auto_mode = true;
   uint8_t counter = 0;
   // Loop forever.
