@@ -14,7 +14,7 @@ enum LEDColor {
 
 enum LEDColor colors[] = {OFF, GREEN, BLUE, CYAN, RED, YELLOW, MAGENTA, WHITE};
 
-int8_t counter = 1;
+int8_t counter = 3;
 
 void setupPortF() {
   // Enable the GPIO port that is used for the on-board LEDs and switches.
@@ -28,16 +28,20 @@ void setupPortF() {
 
   // Set the interrupt type for PF4 (SW1)
   NVIC_EN1_R |= (1 << 14);        // enable interrupt in NVIC
+  NVIC_PEND1_R |= (1 << 14);      // enable interrupt in NVIC
   GPIO_PORTF_IS_R |= 0b00010000;  // PF4 is edge-sensitive
   GPIO_PORTF_IBE_R |= 0b00010000; // PF4 is both edges
-  // GPIO_PORTF_IEV_R |= 0b00010000; // PF4 falling edge event
-  GPIO_PORTF_IM_R = 0b00010000;  // Interrupt on PF4
-  GPIO_PORTF_ICR_R = 0b00010000; // clear flag4
+  GPIO_PORTF_IEV_R |= 0b00010000; // PF4 falling edge event
+  GPIO_PORTF_IM_R = 0b00010000;   // Interrupt on PF4
+  GPIO_PORTF_ICR_R = 0b00010000;  // clear flag4
 }
 
 void setupSysTick() {}
 
-void PortF_Handler(void) { counter++; } // GPIO Port F
+void PortF_Handler(void) {
+  counter++;
+  GPIO_PORTF_ICR_R = 0b00010000; // clear flag4
+} // GPIO Port F
 
 void setLEDColor(enum LEDColor color) { GPIO_PORTF_DATA_R = color << 1; }
 
