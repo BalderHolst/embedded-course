@@ -46,7 +46,7 @@ enum Mode mode = MANUAL;
 enum Direction direction = UP;
 
 // The ticks counter is used for timing and updated by the `systick.h` module
-extern volatile uint8_t ticks;
+extern volatile uint32_t ticks;
 
 // Check if the button is currently pressed. Returns 0 if not.
 int button_pressed() {
@@ -87,81 +87,81 @@ void setup() {
   GPIO_PORTF_PUR_R = 0x10;
 
   init_systick();
+
+  // Enable button interupt
+  NVIC_EN0_R |= (1<<30);
+
+  // Set interupt mask
+  GPIO_PORTF_IM_R = 0x10;
+
+  GPIO_PORTF_ICR_R |= 0x10; // Clear interrupt bit
+}
+
+void IntButtonHandler(void) {
+
+
+  while (button_pressed());
+  uint32_t pressed_ticks = ticks;
+
+  counter++;
+
+  // Ignore switch bounces
+  if (pressed_ticks < debounceTimeout) goto defer;
+
+  // Handle LONG PRESS
+  if (pressed_ticks > longPressTimeout) {
+    direction = !direction;
+    goto defer;
+  }
+
+  // If auto mode is enabled, disable it
+  if (mode == AUTO) {
+    mode = MANUAL;
+    goto defer;
+  }
+
+  // Check for another click within the double click timeout
+  bool doubleClick = false;
+
+  // Reset timer
+  ticks = 0;
+
+  // Check if the button is pressed again after the debounce timeout
+  while (ticks < doubleClickTimeout) {
+    if (button_pressed() && ticks > debounceTimeout) {
+
+      // Wait for button release
+      while (button_pressed());
+
+      if (mode == MANUAL) mode = AUTO;
+      else mode = MANUAL;
+
+      doubleClick = true;
+      break;
+    }
+  }
+
+  // If it is not a double click, then it was a single click
+  if (!doubleClick) {
+    ment(); // Increment or decrement counter on single click
+  }
+
+defer:
+  GPIO_PORTF_ICR_R |= 0x10; // Clear interrupt bit
 }
 
 int main(void) {
   setup();
 
-  // Loop forever.
   while (1) {
-    if (button_pressed()) { // If the button is pressed
-      ticks = 0;
-
-      // Wait for button release
-      while (button_pressed());
-        
-      int elapsed_ticks = ticks; // Store the current value of ticks
-
-      // First check for long press
-
-      if (elapsed_ticks > longPressTimeout) {
-        // If the button is pressed for more than 2 seconds
-
-        direction = !direction;
-        
-        continue; // Skip the rest of the main loop
-      }
-
-      // Then check for single or double click
-      if (elapsed_ticks > debounceTimeout) {
-        // Handle debouncing
-
-        // If auto mode is enabled, disable it
-        if (mode == AUTO) {
-          mode = MANUAL;
-          continue; // Skip the rest of the main loop
-        }
-
-        // Check for another click within the double click timeout
-        bool doubleClick = false;
-
-        // Reset timer
-        ticks = 0;
-
-        // Check if the button is pressed again after the debounce timeout
-        while (ticks < doubleClickTimeout) {
-
-          if (button_pressed() && ticks > debounceTimeout) {
-
-            // Wait for button release
-            while (button_pressed());
-
-            if (mode == MANUAL) mode = AUTO;
-            else mode = MANUAL;
-
-            doubleClick = true;
-            break;
-          }
-        }
-
-        // If it is not a double click, then it was a single click
-        if (!doubleClick) {
-          ment(); // Increment or decrement counter on single click
-        }
-
-      }
-    }
-
-    // If the button is not pressed
-    // Set the color of the LED
     setLEDColor(colors[counter]);
-
     if (mode == AUTO) {
         if (ticks > autoModeInterval) {
-            ticks = 0;
+            ticks -= autoModeInterval;
             ment();
         }
     }
   }
+
   return (0);
 }

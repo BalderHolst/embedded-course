@@ -8,10 +8,10 @@
 
 
 // Volatile because it is changed in an ISR
-volatile uint8_t ticks = 0;
+volatile uint32_t ticks = 0;
 
 
-void SysTick_Handler(void) {
+void IntSysTickHandler(void) {
   // Hardware clears systick int reguest
   ticks++; // Increment ticks every 1ms
 
