@@ -19,7 +19,7 @@ CFLAGS := -mthumb \
 LDFLAGS := -T ../lib/tm4c123.ld --entry ResetISR --gc-sections
 OBJCOPYFLAGS := -O binary
 
-SOURCES := $(wildcard *.c ../lib/*.c)
+SOURCES := $(wildcard *.c) $(wildcard ../lib/*.c)
 OBJECTS := $(patsubst %.c, build/%.o, $(SOURCES))
 DEPENDS := $(patsubst %.c, build/%.d, $(SOURCES))
 
@@ -34,8 +34,8 @@ clean:
 -include $(DEPENDS)
 
 build/%.o: %.c Makefile
-	mkdir -p build
-	$(CC) $(CFLAGS) -MD -MF build/$*.d -c $< -o $@
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -I../lib -MD -MF build/$*.d -c $< -o $@
 
 main: $(OBJECTS)
 	$(LD) $^ $(LDFLAGS) -o build/main.axf

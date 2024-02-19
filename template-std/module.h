@@ -17,7 +17,7 @@
 
 /***************** Header *********************/
 /***************** Include files **************/
-#include "emp_type.h"
+#include "../lib/emp_type.h"
 /***************** Defines ********************/
 /***************** Variables ******************/
 extern INT8U dummy;
