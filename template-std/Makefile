@@ -16,10 +16,10 @@ CFLAGS := -mthumb \
 	-Os -O0 -g \
 	-DPART_TM4C123GH6PM -DTARGET_IS_BLIZZARD_RA1 -Dgcc
 
-LDFLAGS := -T tm4c123.ld --entry ResetISR --gc-sections
+LDFLAGS := -T ../lib/tm4c123.ld --entry ResetISR --gc-sections
 OBJCOPYFLAGS := -O binary
 
-SOURCES := $(wildcard *.c)
+SOURCES := $(wildcard *.c ../lib/*.c)
 OBJECTS := $(patsubst %.c, build/%.o, $(SOURCES))
 DEPENDS := $(patsubst %.c, build/%.d, $(SOURCES))
 

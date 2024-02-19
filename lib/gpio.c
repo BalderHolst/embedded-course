@@ -1,3 +1,5 @@
+#include "gpio.h"
+#include "tm4c123gh6pm.h"
 
 void setupPortF() {
   // Enable the GPIO port that is used for the on-board LEDs and switches.
