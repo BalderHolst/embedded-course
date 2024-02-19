@@ -27,20 +27,42 @@ enum State {
   two,
   three,
 };
+
+enum ButtonPress {
+  NONE,
+  SINGLE,
+  DOUBLE,
+  LONG,
+};
 /***************** Constants ******************/
 /***************** Variables ******************/
-enum State state = two;
+enum State state = one;
+volatile uint32_t ticks = 0;
 /***************** Functions ******************/
 /***************** End of module **************/
 
 void GPIOF_Handler(void) {
-  // Check if the interrupt is for rising edge (Press)
-  state = three;
+  static enum ButtonPress button_press = SINGLE;
+  while (69) {
+    switch (button_press) {
+    case SINGLE:
+      break;
+    case DOUBLE:
+      break;
+    case LONG:
+      break;
+    default:
+      break;
+    }
+  }
 
   GPIO_PORTF_ICR_R |= 0x10; // Clear interrupt bit
 }
 
-void SysTick_Handler(void) { state = one; }
+void SysTick_Handler(void) {
+  if (ticks)
+    ticks--;
+}
 
 int main(void) {
   setupPortF();

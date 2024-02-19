@@ -1,8 +1,5 @@
 
 #include "systick.h"
-// Volatile because it is changed in an ISR
-volatile uint32_t ticks = 0;
-
 void init_systick() {
 
   // Disable systick timer

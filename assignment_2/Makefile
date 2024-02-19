@@ -34,11 +34,11 @@ clean:
 -include $(DEPENDS)
 
 build/%.o: %.c Makefile
-	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I../lib -MD -MF build/$*.d -c $< -o $@
+	mkdir -p build
+	$(CC) $(CFLAGS) -I../lib -MD -MF build/$(notdir $*.d) -c $< -o build/$(notdir $@)
 
 main: $(OBJECTS)
-	$(LD) $^ $(LDFLAGS) -o build/main.axf
+	$(LD) $(addprefix build/, $(notdir $^)) $(LDFLAGS) -o build/main.axf
 	$(OC) $(OBJCOPYFLAGS) build/main.axf build/main.bin
 	$(OD) -Sd -W build/main.axf > build/main.lss
 	$(SZ) build/main.axf

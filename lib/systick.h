@@ -4,6 +4,7 @@
 // Implement EVERYTHING for systick
 
 #include "tm4c123gh6pm.h"
+// Volatile because it is changed in an ISR
 
 #define SYSTICK_RELOAD_VALUE 16000 // SysTick interrupt every 1ms
 
