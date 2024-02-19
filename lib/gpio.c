@@ -12,9 +12,9 @@ void setupPortF() {
   GPIO_PORTF_PUR_R = 0b00010000;
 
   // Set the interrupt type for PF4 (SW1)
-  NVIC_EN1_R |= (1 << 14);        // enable interrupt in NVIC
-  GPIO_PORTF_IS_R |= 0b00010000;  // PF4 is edge-sensitive
-  GPIO_PORTF_IBE_R |= 0b00010000; // PF4 is both edges
+  NVIC_EN0_R |= (1 << (INT_GPIOF - 16)); // enable interrupt in NVIC
+  GPIO_PORTF_IS_R |= 0b00010000;         // PF4 is edge-sensitive
+  GPIO_PORTF_IBE_R |= 0b00010000;        // PF4 is both edges
   // GPIO_PORTF_IEV_R |= 0b00010000; // PF4 falling edge event
   GPIO_PORTF_IM_R = 0b00010000;  // Interrupt on PF4
   GPIO_PORTF_ICR_R = 0b00010000; // clear flag4
