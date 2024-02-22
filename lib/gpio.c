@@ -22,3 +22,5 @@ void setupPortF() {
 }
 
 void setLEDColor(enum LEDColor color) { GPIO_PORTF_DATA_R = color << 1; }
+
+int button_sw1_pressed() { return ~(GPIO_PORTF_DATA_R) & 0b00010000; }

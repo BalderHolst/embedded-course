@@ -15,3 +15,5 @@ void setupPortF();
 
 // Set the color of the LED
 void setLEDColor(enum LEDColor color);
+
+int button_sw1_pressed();

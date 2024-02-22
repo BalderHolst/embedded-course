@@ -22,6 +22,10 @@
 #include <stdint.h>
 
 /***************** Defines ********************/
+#define DOUBLE_CLICK_TIMEOUT 100 // Timeout for double click
+#define LONG_PRESS_TIMEOUT 2000  // Timeout for long press
+#define DEBOUNCE_TIMEOUT 10      // Debounce timeout
+
 enum TraficLightState {
   NORMAL,
   NORWEGIAN,
@@ -43,8 +47,10 @@ enum ButtonState {
 /***************** Constants ******************/
 /***************** Variables ******************/
 enum TraficLightState state = NORMAL;
+volatile uint32_t button_ticks = 0;
 volatile uint32_t ticks = 0;
 /***************** Functions ******************/
+/***************** End of module **************/
 void handle_event(enum Event event) {
   switch (event) {
   case SINGLE:
@@ -57,77 +63,146 @@ void handle_event(enum Event event) {
     state = NORMAL;
     break;
   }
+  ticks = 0;
 }
-/***************** End of module **************/
-
-void GPIOF_Handler(void) {
-  static enum ButtonState button_state = FIRST_PUSH;
-  switch (button_state) {
-  case FIRST_PUSH:
-    ticks = 2000;
-    setLEDColor(RED);
-    if (ticks > 0) {
-      ticks = 100;
-      button_state = FIRST_RELEASE;
-    } else {
-      // Long push
-      handle_event(LONG);
-      button_state = FIRST_PUSH;
-    }
-    break;
-  case FIRST_RELEASE:
-    setLEDColor(GREEN);
-    if (ticks > 1980) {
-      button_state = FIRST_PUSH;
-      break;
-    } else if (ticks > 0) {
-      ticks = 2000;
-      button_state = SECOND_PUSH;
-    } else {
-      handle_event(SINGLE);
-      button_state = FIRST_PUSH;
-    }
-    break;
-  case SECOND_PUSH:
-    setLEDColor(MAGENTA);
-    if (ticks > 0) {
-      handle_event(DOUBLE);
-      button_state = FIRST_PUSH;
-    } else {
-      // Long push
-      handle_event(LONG);
-      button_state = FIRST_PUSH;
-    }
-    break;
+void process_press() {
+  button_ticks = LONG_PRESS_TIMEOUT;
+  // Temporary disable the interrupt on PF4
+  while (button_sw1_pressed()) {
   }
+  uint32_t current_ticks = button_ticks;
+  if (current_ticks > (LONG_PRESS_TIMEOUT - DEBOUNCE_TIMEOUT)) {
+    // Filter out debouncing
+  } else if (current_ticks == 0) {
+    // Long press
+    handle_event(LONG);
+  } else {
 
-  GPIO_PORTF_ICR_R |= 0x10; // Clear interrupt bit
+    // Short press
+
+    // Reset the counter
+    button_ticks = DOUBLE_CLICK_TIMEOUT;
+
+    enum Event event = SINGLE;
+    // Wait for a potential double click
+    while (button_ticks) {
+      if (button_sw1_pressed() &&
+          button_ticks < (DOUBLE_CLICK_TIMEOUT - DEBOUNCE_TIMEOUT)) {
+        event = DOUBLE;
+        // setLEDColor(GREEN);
+        while (button_sw1_pressed()) {
+          // Wait for the button to be released
+        }
+        break;
+      }
+    }
+    // Handle the press type
+    handle_event(event);
+  }
+}
+
+void GPIOF_Handler(void) { // Check if the interrupt is for rising edge (Press)
+  GPIO_PORTF_IM_R &= ~(1 << 4); // Disable interrupt on PF4
+  process_press();
+  // Re-enable the interrupt on PF4
+  GPIO_PORTF_ICR_R |= 0x10;    // Clear interrupt bit
+  GPIO_PORTF_IM_R |= (1 << 4); // Interrupt on PF4
 }
 
 void SysTick_Handler(void) {
+  if (button_ticks)
+    button_ticks--;
   if (ticks)
     ticks--;
 }
 
+void norwegian_lights() {
+  if (!ticks) {
+    GPIO_PORTF_DATA_R |= 0b00001010;
+    ticks = 1000;
+    GPIO_PORTF_DATA_R ^= 0b00000100;
+  }
+}
+
+enum NormalLightState {
+  STOP,
+  READY,
+  GO,
+  YIELD,
+};
+
+void normal_lights() {
+  static enum NormalLightState light_state = STOP;
+  switch (light_state) {
+  case STOP:
+    GPIO_PORTF_DATA_R = ~0b00000010;
+    ticks = 2000;
+    while (ticks)
+      ;
+    light_state = READY;
+    break;
+  case READY:
+    GPIO_PORTF_DATA_R = ~0b00000110;
+    ticks = 500;
+    while (ticks)
+      ;
+    light_state = GO;
+    break;
+  case GO:
+    GPIO_PORTF_DATA_R = ~0b00001000;
+    ticks = 2000;
+    while (ticks)
+      ;
+    light_state = YIELD;
+    break;
+  case YIELD:
+    GPIO_PORTF_DATA_R = ~0b00000100;
+    ticks = 500;
+    while (ticks)
+      ;
+    light_state = STOP;
+    break;
+  }
+}
+void setup() {
+  // Enable the GPIO port that is used for the on-board LEDs and switches.
+  SYSCTL_RCGC2_R = SYSCTL_RCGC2_GPIOF;
+  // Set the direction as output (PF1 - PF3).
+  GPIO_PORTF_DIR_R = 0b00001110;
+  // Enable the GPIO pins for digital function (PF1 - PF4)
+  GPIO_PORTF_DEN_R = 0b00011110;
+  // Enable internal pull-up (PF4).
+  GPIO_PORTF_PUR_R = 0b00010000;
+
+  // Set the interrupt type for PF4 (SW1)
+  NVIC_EN0_R |= (1 << (INT_GPIOF - 16)); // enable interrupt in NVIC
+  NVIC_PRI7_R = (NVIC_PRI7_R & 0xFF00FFFF) | 0x00A00000; // priority 5
+  GPIO_PORTF_IS_R |= 0b00010000; // PF4 is edge-sensitive
+  // GPIO_PORTF_IBE_R |= 0b00010000; // PF4 is both edges
+  GPIO_PORTF_IEV_R &= ~0b00010000; // PF4 falling edge event
+  GPIO_PORTF_IM_R = 0b00010000;    // Interrupt on PF4
+  GPIO_PORTF_ICR_R = 0b00010000;   // clear flag4
+}
 int main(void) {
-  setupPortF();
+  setup();
   init_systick();
-  setLEDColor(WHITE);
+  GPIO_PORTF_DATA_R &= 0b00001110;
   // Loop forever.
   while (1) {
-    continue;
+    // continue;
     switch (state) {
     case NORMAL:
-      setLEDColor(BLUE);
+      normal_lights();
       break;
     case NORWEGIAN:
-      setLEDColor(RED);
+      norwegian_lights();
       break;
     case EMERGENCY:
-      setLEDColor(GREEN);
+      GPIO_PORTF_DATA_R |= 0b00001100;
+      GPIO_PORTF_DATA_R &= ~0b00000010;
       break;
     default:
-      setLEDColor(OFF);
+      setLEDColor(WHITE);
       break;
     }
   }
