@@ -133,6 +133,7 @@ enum NormalLightState {
 
 void normal_lights() {
   static enum NormalLightState light_state = STOP;
+
   switch (light_state) {
   case STOP:
     GPIO_PORTF_DATA_R = ~0b00000010;
@@ -186,7 +187,6 @@ void setup() {
 int main(void) {
   setup();
   init_systick();
-  GPIO_PORTF_DATA_R &= 0b00001110;
   // Loop forever.
   while (1) {
     // continue;
