@@ -165,6 +165,7 @@ void normal_lights() {
     break;
   }
 }
+
 void setup() {
   // Enable the GPIO port that is used for the on-board LEDs and switches.
   SYSCTL_RCGC2_R = SYSCTL_RCGC2_GPIOF;
@@ -184,6 +185,7 @@ void setup() {
   GPIO_PORTF_IM_R = 0b00010000;    // Interrupt on PF4
   GPIO_PORTF_ICR_R = 0b00010000;   // clear flag4
 }
+
 int main(void) {
   setup();
   init_systick();
