@@ -1,5 +1,3 @@
-#include "uart0.h"
-
 #ifndef UART
 #define UART
 

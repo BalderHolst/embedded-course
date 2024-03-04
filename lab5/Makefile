@@ -25,6 +25,11 @@ DEPENDS := $(patsubst %.c, build/%.d, $(SOURCES))
 
 all: main
 
+test:
+	echo "SOURCES: $(SOURCES)"
+	echo "OBJECTS: $(OBJECTS)"
+	echo "DEPENDS: $(DEPENDS)"
+
 flash: all
 	lm4flash build/main.bin
 
