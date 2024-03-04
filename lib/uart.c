@@ -5,9 +5,26 @@ void uart_putc(char ch) {
     uart0_putc(ch);
 }
 
-void uart_getc(char ch) {
+char uart_getc() {
     while(!uart0_rx_rdy());
-    uart0_getc(ch);
+    return uart0_getc();
+}
+
+char * uart_get_string() {
+    static char buffer[256];
+    char *buffer_pointer = buffer;
+
+    char current_char = '\0';
+
+    do {
+        current_char = uart_getc();
+        *buffer_pointer = current_char;
+        buffer_pointer++;
+    } while(current_char != '\n' && current_char != '\r' && current_char != '\0');
+
+    *buffer_pointer = '\0';
+
+    return buffer;
 }
 
 void uart_init() {

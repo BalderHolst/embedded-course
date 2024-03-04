@@ -25,9 +25,14 @@ int main(void) {
     setup();
 
     while(1) {
-        char * str = uart_get_string();
-        uart_put_stringln("===================================");
-        uart_put_string(str);
+        uart_put_stringln("Turning ON!");
+        setLEDColor(BLUE);
+        ticks = TIMEOUT;
+        while (ticks);
+        uart_put_stringln("Turning OFF...");
+        setLEDColor(OFF);
+        ticks = TIMEOUT;
+        while (ticks);
     }
 
     return (0);
